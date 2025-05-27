@@ -9,10 +9,10 @@ echo "  |  \\| |/ _ \\ \\ /\\ / / _ \\ |/ _ \\/ __|"
 echo "  | |\\  |  __/\\ V  V /  __/ |  __/\\__ \\"
 echo "  |_| \\_|\\___| \\_/\\_/ \\___|_|\\___||___/"
 echo
-echo "    N O W H E R E   2   R U N"
+echo "       N O W H E R E   2   R U N"
 echo "---------------------------------------"
-echo "    Stealth Bash Port Scanner"
-echo "    Coded by: Akali35 – Solo Project 2025"
+echo "       "Stealth Bash Port Scanner"
+echo "   Coded by: Akali35 – Solo Project 2025"
 echo "======================================="
 
 # Random hacker quotes
