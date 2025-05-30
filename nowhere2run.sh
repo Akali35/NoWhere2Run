@@ -1,5 +1,24 @@
 #!/bin/bash
 
+function help() {
+    echo "Usage: $0 [-d delay] [-s] [-v] <ip> <port_start> <port_end>"
+    echo "  -d delay      Delay between scans (e.g. 0.2 for 200ms)"
+    echo "  -s            Super-stealth mode (random ports + random delays)"
+    echo "  -v            Verbose mode (show each port being scanned)"
+    echo "  -n            No dependencies"
+    exit 1
+}
+
+function dependencies() {
+    # Check dependencies
+    for cmd in hping3 nc timeout awk; do
+        if ! command -v $cmd >/dev/null 2>&1; then
+            echo "[!] Error: '$cmd' is required but not installed."
+            exit 1
+        fi
+done
+}
+
 # Clear screen and show banner
 clear
 echo "======================================="
@@ -11,7 +30,7 @@ echo "  |_| \\_|\\___| \\_/\\_/ \\___|_|\\___||___/"
 echo
 echo "       N O W H E R E   2   R U N"
 echo "---------------------------------------"
-echo "       "Stealth Bash Port Scanner"
+echo "       Stealth Bash Port Scanner"
 echo "   Coded by: Akali35 – Solo Project 2025"
 echo "======================================="
 
@@ -33,25 +52,19 @@ echo
 echo "💬 $RANDOM_QUOTE"
 echo
 
-# Check dependencies
-for cmd in hping3 nc timeout awk; do
-    if ! command -v $cmd >/dev/null 2>&1; then
-        echo "[!] Error: '$cmd' is required but not installed."
-        exit 1
-    fi
-done
-
 # Default options
 DELAY=0.1
 STEALTH=false
 VERBOSE=false
+NO_DEPS=false
 
 # Option parsing
-while getopts "d:sv" opt; do
+while getopts "d:svn" opt; do
     case $opt in
         d) DELAY=$OPTARG ;;
         s) STEALTH=true ;;
         v) VERBOSE=true ;;
+        n) NO_DEPS=true ;;
         *) ;;
     esac
 done
@@ -63,11 +76,7 @@ START_PORT=$2
 END_PORT=$3
 
 if [[ -z $TARGET || -z $START_PORT || -z $END_PORT ]]; then
-    echo "Usage: $0 [-d delay] [-s] [-v] <ip> <port_start> <port_end>"
-    echo "  -d delay      Delay between scans (e.g. 0.2 for 200ms)"
-    echo "  -s            Super-stealth mode (random ports + random delays)"
-    echo "  -v            Verbose mode (show each port being scanned)"
-    exit 1
+    help
 fi
 
 # Setup
@@ -96,16 +105,26 @@ scan_port() {
     local port=$2
 
     $VERBOSE && echo "[*] Scanning port $port..."
+    if [[ $NO_DEPS == false ]]; then
 
-    timeout 2 hping3 -S -p $port -c 1 $ip 2>/dev/null | grep -q "flags=SA"
-    if [[ $? -eq 0 ]]; then
-        echo "Port $port : OPEN" | tee -a "$LOG_FILE"
-    else
-        timeout 2 hping3 -S -p $port -c 1 $ip 2>/dev/null | grep -q "flags=RA"
+        timeout 2 hping3 -S -p $port -c 1 $ip 2>/dev/null | grep -q "flags=SA"
         if [[ $? -eq 0 ]]; then
-            echo "Port $port : CLOSED" >> "$LOG_FILE"
+            echo "Port $port : OPEN" | tee -a "$LOG_FILE"
         else
-            echo "Port $port : FILTERED/NO RESPONSE" >> "$LOG_FILE"
+            timeout 2 hping3 -S -p $port -c 1 $ip 2>/dev/null | grep -q "flags=RA"
+            if [[ $? -eq 0 ]]; then
+                echo "Port $port : CLOSED" >> "$LOG_FILE"
+            else
+                echo "Port $port : FILTERED/NO RESPONSE" >> "$LOG_FILE"
+            fi
+        fi
+    
+    else
+        r="$(timeout 2 echo > /dev/tcp/$ip/$port >/dev/null 2>&1)"
+        if [[ $? -eq 0 ]]; then
+            echo "Port $port : OPEN" | tee -a "$LOG_FILE"
+        else
+            echo "Port $port : CLOSED" >> "$LOG_FILE"
         fi
     fi
 }
